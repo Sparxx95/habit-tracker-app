@@ -11,6 +11,8 @@ permissions:
 jobs:
   build:
     runs-on: macos-14
+    env:
+      INDEX_REF: ${{ github.event.client_payload.sha || 'main' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -19,7 +21,7 @@ jobs:
           node-version: '20'
 
       - name: Abhängigkeiten installieren
-        run: npm install
+        run: npm ci
 
       - name: www synchronisieren und natives Projekt aktualisieren
         run: npm run cap:sync:ios

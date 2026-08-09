@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const REMOTE_INDEX_URL = 'https://raw.githubusercontent.com/Sparxx95/habit-tracker/main/index.html';
+const INDEX_REF = process.env.INDEX_REF || 'main';
+const REMOTE_INDEX_URL = `https://raw.githubusercontent.com/Sparxx95/habit-tracker/${INDEX_REF}/index.html`;
 const WWW_DIR = path.join(__dirname, '..', 'www');
 const WWW_INDEX = path.join(WWW_DIR, 'index.html');
 

@@ -11,6 +11,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      INDEX_REF: ${{ github.event.client_payload.sha || 'main' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -26,6 +28,9 @@ jobs:
 
       - name: Abhängigkeiten installieren
         run: npm ci
+
+      - name: Unit-Tests (www-Sync)
+        run: npm run test:unit
 
       - name: www synchronisieren und natives Projekt aktualisieren
         run: npm run cap:sync:android

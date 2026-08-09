@@ -58,12 +58,12 @@ private fun HabitTrackerApp(repository: HabitRepository) {
     when (val state = sheetState) {
         is EditSheetState.Hidden -> Unit
         is EditSheetState.AddNew -> {
-            val editViewModel: HabitEditViewModel = viewModel(
-                key = "add-new",
-                factory = viewModelFactory {
-                    initializer { HabitEditViewModel(repository, habitId = null) }
-                }
-            )
+            // Bewusst nicht über viewModel(key = ...): dessen ViewModelStore ist an die
+            // Activity gebunden und überlebt Hidden→AddNew-Zyklen, sodass eine per Konstante
+            // geschlüsselte Instanz beim erneuten Öffnen alte, verworfene Eingaben zeigen würde.
+            // remember(state) erzeugt bei jedem Wechsel nach AddNew eine frische Instanz, weil
+            // dieser when-Zweig beim Wechsel nach Hidden aus der Komposition entfernt wird.
+            val editViewModel = remember(state) { HabitEditViewModel(repository, habitId = null) }
             HabitEditSheet(
                 viewModel = editViewModel,
                 onDismiss = { sheetState = EditSheetState.Hidden },
@@ -71,12 +71,9 @@ private fun HabitTrackerApp(repository: HabitRepository) {
             )
         }
         is EditSheetState.EditExisting -> {
-            val editViewModel: HabitEditViewModel = viewModel(
-                key = "edit-${state.habitId}",
-                factory = viewModelFactory {
-                    initializer { HabitEditViewModel(repository, habitId = state.habitId) }
-                }
-            )
+            // Gleicher Grund wie oben: frische Instanz pro Öffnen statt einer über habitId
+            // geschlüsselten, Activity-gebundenen Instanz mit verworfenen Änderungen.
+            val editViewModel = remember(state) { HabitEditViewModel(repository, habitId = state.habitId) }
             HabitEditSheet(
                 viewModel = editViewModel,
                 onDismiss = { sheetState = EditSheetState.Hidden },

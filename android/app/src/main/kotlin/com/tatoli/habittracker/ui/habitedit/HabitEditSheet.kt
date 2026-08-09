@@ -56,8 +56,8 @@ fun HabitEditSheet(
                     val color = Color(android.graphics.Color.parseColor(hex))
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
-                            .padding(4.dp)
+                            .size(48.dp)
+                            .padding(8.dp)
                             .background(color, CircleShape)
                             .border(
                                 width = if (viewModel.color == hex) 2.dp else 0.dp,
@@ -70,18 +70,15 @@ fun HabitEditSheet(
             }
             Spacer(Modifier.height(16.dp))
 
+            // Nur "Täglich" verfügbar: "Wöchentlich" hätte noch keine Wochen-Key-bewusste
+            // Abfrage/Verarbeitung (ViewModel/DAO) hinter sich und würde still wie "daily"
+            // behandelt. Kehrt zurück, sobald ein späterer Plan echte Wochensemantik liefert.
             Text("Rhythmus", style = MaterialTheme.typography.labelLarge)
             Row(modifier = Modifier.padding(top = 8.dp)) {
                 FilterChip(
                     selected = viewModel.freq == "daily",
                     onClick = { viewModel.onFreqChange("daily") },
                     label = { Text("Täglich") }
-                )
-                Spacer(Modifier.width(8.dp))
-                FilterChip(
-                    selected = viewModel.freq == "weekly",
-                    onClick = { viewModel.onFreqChange("weekly") },
-                    label = { Text("Wöchentlich") }
                 )
             }
             Spacer(Modifier.height(24.dp))

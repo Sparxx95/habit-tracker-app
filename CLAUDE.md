@@ -2,27 +2,37 @@
 
 ## Projektüberblick
 
-Dieses Repo enthält ausschließlich die native iOS- und Android-App für den
-[Habit Tracker](https://github.com/Sparxx95/habit-tracker) – gebaut mit
-Capacitor als dünner nativer Wrapper um dieselbe `index.html`, die auch als
-Web-App via GitHub Pages läuft.
+Dieses Repo enthält die native iOS- und Android-App für den
+[Habit Tracker](https://github.com/Sparxx95/habit-tracker). Die beiden
+Plattformen sind architektonisch unterschiedlich: **iOS** ist weiterhin ein
+dünner Capacitor-Wrapper um dieselbe `index.html`, die auch als Web-App via
+GitHub Pages läuft. **Android** ist seit 2026-08-09 eine echte native App
+(Kotlin, Jetpack Compose, Room) ohne WebView und ohne Capacitor – siehe
+Abschnitt "Native Android-App" unten für Details.
 
-**Wichtig:** `index.html` selbst liegt **nicht** in diesem Repo. Einzige
+**Wichtig (iOS):** `index.html` selbst liegt **nicht** in diesem Repo. Einzige
 Quelle der Wahrheit ist `index.html` im Root von
 [`Sparxx95/habit-tracker`](https://github.com/Sparxx95/habit-tracker).
 `scripts/sync-www.js` lädt sie bei jedem Sync per HTTPS von
 `https://raw.githubusercontent.com/Sparxx95/habit-tracker/main/index.html`.
+Für Android ist `index.html` irrelevant – dort ist `android/` die alleinige
+Quelle der Wahrheit (siehe unten).
 
 ## CI-Kopplung
 
-- Ein grüner `test.yml`-Lauf im `habit-tracker`-Repo löst automatisch per
-  `repository_dispatch` (Event-Typ `habit-tracker-index-updated`) einen
-  Build hier aus – `ios-build.yml` und `android-build.yml` reagieren beide
-  darauf. Zusätzlich manuell auslösbar per `workflow_dispatch`.
-- Es gibt keinen `workflow_run`-Trigger mehr (der würde nur innerhalb
+- **iOS:** Ein grüner `test.yml`-Lauf im `habit-tracker`-Repo löst
+  automatisch per `repository_dispatch` (Event-Typ
+  `habit-tracker-index-updated`) einen Build hier aus – `ios-build.yml`
+  reagiert darauf. Zusätzlich manuell auslösbar per `workflow_dispatch`.
+  Es gibt keinen `workflow_run`-Trigger mehr (der würde nur innerhalb
   desselben Repos funktionieren) – die Kopplung läuft über das
   `repository_dispatch`-Event, das `habit-tracker`s `test.yml` sendet
   (Secret `HABIT_TRACKER_APP_DISPATCH_TOKEN` dort hinterlegt).
+- **Android:** reagiert **nicht** mehr auf `repository_dispatch` (das war ein
+  Überbleibsel aus der Capacitor-Zeit, als Android noch `index.html`
+  konsumiert hat). `android-build.yml` läuft stattdessen bei `push`/
+  `pull_request` mit Änderungen unter `android/**` sowie manuell per
+  `workflow_dispatch`.
 
 ## Native iOS-App (Capacitor)
 
@@ -56,11 +66,12 @@ Quelle der Wahrheit ist `index.html` im Root von
   Android-App — alle Daten liegen ausschließlich in einer lokalen
   Room-Datenbank auf dem Gerät. Einziger Datenaustauschweg zur Web-App ist
   der manuelle XML-Export/-Import (gleiches Format wie die Web-App).
-- `android-build.yml` baut bei jedem `repository_dispatch`-Event (und
-  manuell per `workflow_dispatch`) auf einem `ubuntu-latest`-Runner Unit-Tests
-  + ein **Debug-APK** (`./gradlew assembleDebug`) und lädt es als
-  Actions-Artifact hoch. Kein `npm`/Capacitor-Sync mehr nötig, da die App
-  keinen Web-Inhalt mehr lädt.
+- `android-build.yml` baut bei jedem `push`/`pull_request` mit Änderungen
+  unter `android/**` (und manuell per `workflow_dispatch`) auf einem
+  `ubuntu-latest`-Runner Unit-Tests + ein **Debug-APK**
+  (`./gradlew assembleDebug`) und lädt es als Actions-Artifact hoch. Kein
+  `repository_dispatch`/`npm`/Capacitor-Sync mehr nötig, da die App keinen
+  Web-Inhalt mehr lädt.
 - **Lokaler Test-Loop (primärer Weg, da kein Android-Gerät vorhanden ist):**
   Android Studio unter Windows installieren (nicht in WSL2 — bessere
   GPU-Beschleunigung für den Emulator), im SDK-Manager ein Android Virtual
@@ -83,7 +94,6 @@ Quelle der Wahrheit ist `index.html` im Root von
 - Für Android (echte native App, kein Capacitor mehr) ist `android/` die
   alleinige Quelle der Wahrheit für UI und Funktionalität — es gibt keinen
   Sync mehr von `index.html`.
-- `npm run sync` / `npm run cap:sync:ios` / `npm run cap:sync:android`
-  holen sich immer die aktuelle `index.html` von `main` in
-  `habit-tracker` — ein lokaler Checkout dieses Repos hat sonst keinen
-  Zugriff auf den Web-App-Code.
+- `npm run sync` / `npm run cap:sync:ios` holen sich immer die aktuelle
+  `index.html` von `main` in `habit-tracker` — ein lokaler Checkout dieses
+  Repos hat sonst keinen Zugriff auf den Web-App-Code (nur für iOS relevant).

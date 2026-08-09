@@ -1,8 +1,13 @@
 name: Android-Build
 
 on:
-  repository_dispatch:
-    types: [habit-tracker-index-updated]
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-build.yml'
+  pull_request:
+    paths:
+      - 'android/**'
   workflow_dispatch: {}
 
 permissions:

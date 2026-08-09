@@ -15,7 +15,14 @@ private val HabitTrackerColorScheme = darkColorScheme(
     onSurfaceVariant = Muted,
     primary = Amber,
     secondary = AmberDim,
-    onPrimary = Bg
+    onPrimary = Bg,
+    primaryContainer = Amber,
+    onPrimaryContainer = Bg,
+    secondaryContainer = AmberDim,
+    onSecondaryContainer = Ink,
+    surfaceContainerLow = Card,
+    surfaceContainer = Card,
+    surfaceVariant = Card
 )
 
 @Composable

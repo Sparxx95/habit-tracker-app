@@ -10,6 +10,10 @@ import com.tatoli.habittracker.data.HabitRepository
 import com.tatoli.habittracker.ui.theme.HabitPalette
 import kotlinx.coroutines.launch
 
+// Bewusst nicht über viewModel()/ViewModelStore bezogen (siehe MainActivity.remember(state)) —
+// jedes Sheet-Öffnen braucht eine frische Instanz ohne Altzustand aus vorherigen Sitzungen.
+// onCleared()/viewModelScope-Cancellation durch das Framework finden dadurch nicht statt;
+// die Coroutine-Nutzung bleibt kurzlebig (save/delete), das ist hier unkritisch.
 class HabitEditViewModel(
     private val repository: HabitRepository,
     private val habitId: Long?

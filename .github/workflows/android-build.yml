@@ -11,14 +11,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      INDEX_REF: ${{ github.event.client_payload.sha || 'main' }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - uses: actions/setup-java@v4
         with:
@@ -26,14 +20,9 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Abhängigkeiten installieren
-        run: npm ci
-
-      - name: Unit-Tests (www-Sync)
-        run: npm run test:unit
-
-      - name: www synchronisieren und natives Projekt aktualisieren
-        run: npm run cap:sync:android
+      - name: Unit-Tests
+        working-directory: android
+        run: ./gradlew testDebugUnitTest
 
       - name: Debug-APK bauen
         working-directory: android

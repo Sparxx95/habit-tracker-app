@@ -1,4 +1,4 @@
-# habit-tracker-app – Native iOS/Android-Wrapper (Capacitor)
+# habit-tracker-app – Native iOS-App (Capacitor) + native Android-App (Kotlin/Compose)
 
 ## Projektüberblick
 
@@ -45,23 +45,28 @@ Quelle der Wahrheit ist `index.html` im Root von
 - Repo ist bewusst öffentlich → macOS-Runner-Minuten sind unbegrenzt und
   kostenlos.
 
-## Native Android-App (Capacitor)
+## Native Android-App (Kotlin, Jetpack Compose, Room)
 
+- Android ist seit 2026-08-09 eine **echte native App** (kein WebView, kein
+  Capacitor mehr) — Kotlin, Jetpack Compose (UI), Room (lokale
+  SQLite-Datenbank). Siehe
+  `docs/superpowers/specs/2026-08-09-native-android-app-design.md` für die
+  vollständige Architektur-Entscheidung.
+- **Bewusst rein lokal:** kein Login, kein Firebase, kein Cloud-Sync in der
+  Android-App — alle Daten liegen ausschließlich in einer lokalen
+  Room-Datenbank auf dem Gerät. Einziger Datenaustauschweg zur Web-App ist
+  der manuelle XML-Export/-Import (gleiches Format wie die Web-App).
 - `android-build.yml` baut bei jedem `repository_dispatch`-Event (und
-  manuell per `workflow_dispatch`) auf einem `ubuntu-latest`-Runner ein
-  **Debug-APK** (`./gradlew assembleDebug`, automatisch mit dem
-  Debug-Keystore signiert und direkt installierbar) und lädt es als
-  Actions-Artifact hoch. Kein Play-Store-Konto nötig für diesen Schritt.
+  manuell per `workflow_dispatch`) auf einem `ubuntu-latest`-Runner Unit-Tests
+  + ein **Debug-APK** (`./gradlew assembleDebug`) und lädt es als
+  Actions-Artifact hoch. Kein `npm`/Capacitor-Sync mehr nötig, da die App
+  keinen Web-Inhalt mehr lädt.
 - **Lokaler Test-Loop (primärer Weg, da kein Android-Gerät vorhanden ist):**
-  Voraussetzung: vorher `npm ci` und `npm run cap:sync:android` ausführen
-  — ohne `node_modules/` und ohne Sync schlägt der Gradle-Sync fehl
-  (generierte Cordova-Plugin-Ordner sind gitignored und werden erst beim
-  Sync erzeugt). Android Studio unter Windows installieren (nicht in
-  WSL2 — bessere GPU-Beschleunigung für den Emulator), im SDK-Manager ein
-  Android Virtual Device (AVD) anlegen. Nach jedem `npm run
-  cap:sync:android` das Projekt `android/` unter Windows in Android
-  Studio öffnen (Gradle-Sync läuft automatisch) und "Run" → App startet
-  im AVD-Emulator.
+  Android Studio unter Windows installieren (nicht in WSL2 — bessere
+  GPU-Beschleunigung für den Emulator), im SDK-Manager ein Android Virtual
+  Device (AVD) anlegen. Projekt `android/` unter Windows in Android Studio
+  öffnen (Gradle-Sync läuft automatisch, kein Sync-Skript mehr nötig) und
+  "Run" → App startet im AVD-Emulator.
 - Alternative ohne Android Studio: fertige APK aus dem letzten
   `Android-Build`-Actions-Lauf herunterladen
   (`gh run download <id> -n habit-tracker-android-debug`) und per Drag &
@@ -71,9 +76,13 @@ Quelle der Wahrheit ist `index.html` im Root von
 
 - App-Code-Änderungen (`index.html`) passieren ausschließlich im
   `habit-tracker`-Repo, nicht hier.
-- Änderungen hier betreffen nur natives Verhalten: App-Icon,
-  Splash-Screen, native Permissions, Capacitor-Plugins,
-  Build-Konfiguration.
+- Für iOS (Capacitor) gilt weiterhin: Änderungen hier betreffen nur
+  natives Verhalten (App-Icon, Splash-Screen, native Permissions,
+  Capacitor-Plugins, Build-Konfiguration) — App-Code bleibt in
+  `habit-tracker`.
+- Für Android (echte native App, kein Capacitor mehr) ist `android/` die
+  alleinige Quelle der Wahrheit für UI und Funktionalität — es gibt keinen
+  Sync mehr von `index.html`.
 - `npm run sync` / `npm run cap:sync:ios` / `npm run cap:sync:android`
   holen sich immer die aktuelle `index.html` von `main` in
   `habit-tracker` — ein lokaler Checkout dieses Repos hat sonst keinen

@@ -1,0 +1,42 @@
+name: Android-Build
+
+on:
+  repository_dispatch:
+    types: [habit-tracker-index-updated]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: www synchronisieren und natives Projekt aktualisieren
+        run: npm run cap:sync:android
+
+      - name: Debug-APK bauen
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Build-Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: habit-tracker-android-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14

@@ -1,0 +1,43 @@
+name: iOS-Build
+
+on:
+  repository_dispatch:
+    types: [habit-tracker-index-updated]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Abhängigkeiten installieren
+        run: npm install
+
+      - name: www synchronisieren und natives Projekt aktualisieren
+        run: npm run cap:sync:ios
+
+      - name: Unsigned Simulator-Build
+        working-directory: ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath build \
+            build
+
+      - name: Build-Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: habit-tracker-ios-simulator-build
+          path: ios/App/build/Build/Products/Debug-iphonesimulator/*.app
+          retention-days: 14

@@ -1,0 +1,43 @@
+name: iOS-Projekt bootstrappen (einmalig)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Abhängigkeiten installieren
+        run: npm install
+
+      - name: www synchronisieren
+        run: npm run sync
+
+      - name: iOS-Plattform hinzufügen (falls noch nicht vorhanden)
+        run: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          else
+            echo "ios/ existiert bereits, überspringe cap add ios"
+          fi
+
+      - name: Generiertes iOS-Projekt committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ios
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen an ios"
+          else
+            git commit -m "chore: generiere Capacitor-iOS-Projekt (Bootstrap)"
+            git push
+          fi

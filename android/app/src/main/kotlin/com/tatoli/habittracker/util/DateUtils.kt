@@ -15,7 +15,7 @@ fun isoWeekNumber(date: LocalDate): Int = date.get(WeekFields.ISO.weekOfWeekBase
 
 fun weekKey(date: LocalDate): String {
     val year = date.get(WeekFields.ISO.weekBasedYear())
-    return "%d-W%02d".format(year, isoWeekNumber(date))
+    return String.format(java.util.Locale.ROOT, "%d-W%02d", year, isoWeekNumber(date))
 }
 
 fun mondayOf(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value - 1).toLong())

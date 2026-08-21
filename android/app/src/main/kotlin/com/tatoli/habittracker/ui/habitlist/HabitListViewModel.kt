@@ -60,14 +60,16 @@ class HabitListViewModel(private val repository: HabitRepository) : ViewModel() 
     @OptIn(ExperimentalCoroutinesApi::class)
     val habits: StateFlow<List<HabitDisplayState>> = combine(
         repository.observeHabitsWithDone(),
-        _viewMonth
-    ) { habitsWithDone, month ->
-        val today = LocalDate.now()
+        _viewMonth,
+        dayKey
+    ) { habitsWithDone, month, key ->
+        val today = LocalDate.parse(key)
         habitsWithDone.map { toDisplayState(it, month, today) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun toggleToday(habit: HabitDisplayState) {
-        val key = if (habit.freq == "weekly") weekKey(LocalDate.now()) else dayKey.value
+        val today = LocalDate.parse(dayKey.value)
+        val key = if (habit.freq == "weekly") weekKey(today) else dayKey.value
         toggleCell(habit.id, key, habit.doneToday)
     }
 
@@ -78,7 +80,12 @@ class HabitListViewModel(private val repository: HabitRepository) : ViewModel() 
     }
 
     fun refreshDay() {
-        dayKey.value = todayKey()
+        val oldMonth = YearMonth.from(LocalDate.parse(dayKey.value))
+        val newToday = LocalDate.now()
+        dayKey.value = dateKeyOf(newToday)
+        if (_viewMonth.value == oldMonth) {
+            _viewMonth.value = YearMonth.from(newToday)
+        }
     }
 
     fun prevMonth() {

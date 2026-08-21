@@ -75,4 +75,12 @@ class DateUtilsTest {
         )
         assertEquals(2, weekStreak(done, today))
     }
+
+    @Test
+    fun weekKey_handlesYearBoundaryCorrectly() {
+        // 2027-01-01..03 fallen noch in ISO-Woche 53 des Jahres 2026;
+        // erst 2027-01-04 beginnt Woche 1 des Jahres 2027.
+        assertEquals("2026-W53", weekKey(LocalDate.of(2027, 1, 1)))
+        assertEquals("2027-W01", weekKey(LocalDate.of(2027, 1, 4)))
+    }
 }

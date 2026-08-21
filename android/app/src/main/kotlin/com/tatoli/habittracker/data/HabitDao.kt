@@ -2,9 +2,12 @@ package com.tatoli.habittracker.data
 
 import androidx.room.Dao
 import androidx.room.Delete
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Relation
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -14,6 +17,12 @@ data class HabitWithDoneFlag(
     val color: String,
     val freq: String,
     val doneToday: Boolean
+)
+
+data class HabitWithDoneEntities(
+    @Embedded val habit: HabitEntity,
+    @Relation(parentColumn = "id", entityColumn = "habitId")
+    val doneEntries: List<HabitDoneEntity>
 )
 
 @Dao
@@ -26,6 +35,10 @@ interface HabitDao {
         ORDER BY h.id
     """)
     fun observeHabitsWithDoneFlag(dateKey: String): Flow<List<HabitWithDoneFlag>>
+
+    @Transaction
+    @Query("SELECT * FROM habits ORDER BY id")
+    fun observeHabitsWithDone(): Flow<List<HabitWithDoneEntities>>
 
     @Query("SELECT * FROM habits WHERE id = :id")
     suspend fun getHabitById(id: Long): HabitEntity?

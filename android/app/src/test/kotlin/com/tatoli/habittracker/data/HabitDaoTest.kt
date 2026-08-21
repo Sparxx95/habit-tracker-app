@@ -20,30 +20,6 @@ class HabitDaoTest {
             .build()
 
     @Test
-    fun observeHabitsWithDoneFlag_reflectsInsertAndToggle() = runBlocking {
-        val db = buildDb()
-        val dao = db.habitDao()
-
-        val id1 = dao.insertHabit(HabitEntity(name = "Lesen", color = "#F2B450", freq = "daily"))
-        dao.insertHabit(HabitEntity(name = "Sport", color = "#4FC98A", freq = "weekly"))
-
-        var result = dao.observeHabitsWithDoneFlag("2026-08-09").first()
-        assertEquals(2, result.size)
-        assertTrue(result.all { !it.doneToday })
-
-        dao.insertDone(HabitDoneEntity(habitId = id1, dateKey = "2026-08-09"))
-        result = dao.observeHabitsWithDoneFlag("2026-08-09").first()
-        assertTrue(result.first { it.id == id1 }.doneToday)
-        assertFalse(result.first { it.name == "Sport" }.doneToday)
-
-        dao.deleteDone(id1, "2026-08-09")
-        result = dao.observeHabitsWithDoneFlag("2026-08-09").first()
-        assertFalse(result.first { it.id == id1 }.doneToday)
-
-        db.close()
-    }
-
-    @Test
     fun observeHabitsWithDone_includesFullDoneHistoryPerHabitAndReflectsToggle() = runBlocking {
         val db = buildDb()
         val dao = db.habitDao()
@@ -85,7 +61,7 @@ class HabitDaoTest {
         assertEquals("Meditation", habit?.name)
 
         dao.deleteHabit(habit!!)
-        val afterDelete = dao.observeHabitsWithDoneFlag("2026-08-09").first()
+        val afterDelete = dao.observeHabitsWithDone().first()
         assertTrue(afterDelete.isEmpty())
 
         db.close()

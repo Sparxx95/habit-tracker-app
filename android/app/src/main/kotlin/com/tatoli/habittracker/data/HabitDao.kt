@@ -11,14 +11,6 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
-data class HabitWithDoneFlag(
-    val id: Long,
-    val name: String,
-    val color: String,
-    val freq: String,
-    val doneToday: Boolean
-)
-
 data class HabitWithDoneEntities(
     @Embedded val habit: HabitEntity,
     @Relation(parentColumn = "id", entityColumn = "habitId")
@@ -27,14 +19,6 @@ data class HabitWithDoneEntities(
 
 @Dao
 interface HabitDao {
-
-    @Query("""
-        SELECT h.id as id, h.name as name, h.color as color, h.freq as freq,
-               EXISTS(SELECT 1 FROM habit_done d WHERE d.habitId = h.id AND d.dateKey = :dateKey) as doneToday
-        FROM habits h
-        ORDER BY h.id
-    """)
-    fun observeHabitsWithDoneFlag(dateKey: String): Flow<List<HabitWithDoneFlag>>
 
     @Transaction
     @Query("SELECT * FROM habits ORDER BY id")

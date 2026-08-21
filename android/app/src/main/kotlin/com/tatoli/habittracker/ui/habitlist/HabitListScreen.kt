@@ -31,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.tatoli.habittracker.data.HabitWithDoneFlag
 
 @Composable
 fun HabitListScreen(
@@ -51,7 +50,7 @@ fun HabitListScreen(
             items(habits, key = { it.id }) { habit ->
                 HabitCard(
                     habit = habit,
-                    onToggle = { viewModel.toggleDone(habit) },
+                    onToggle = { viewModel.toggleToday(habit) },
                     onClick = { onEditHabit(habit.id) }
                 )
             }
@@ -61,7 +60,7 @@ fun HabitListScreen(
 
 @Composable
 fun HabitCard(
-    habit: HabitWithDoneFlag,
+    habit: HabitDisplayState,
     onToggle: () -> Unit,
     onClick: () -> Unit
 ) {

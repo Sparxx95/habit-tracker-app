@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,15 +70,18 @@ fun HabitEditSheet(
             }
             Spacer(Modifier.height(16.dp))
 
-            // Nur "Täglich" verfügbar: "Wöchentlich" hätte noch keine Wochen-Key-bewusste
-            // Abfrage/Verarbeitung (ViewModel/DAO) hinter sich und würde still wie "daily"
-            // behandelt. Kehrt zurück, sobald ein späterer Plan echte Wochensemantik liefert.
             Text("Rhythmus", style = MaterialTheme.typography.labelLarge)
             Row(modifier = Modifier.padding(top = 8.dp)) {
                 FilterChip(
                     selected = viewModel.freq == "daily",
                     onClick = { viewModel.onFreqChange("daily") },
                     label = { Text("Täglich") }
+                )
+                Spacer(Modifier.width(8.dp))
+                FilterChip(
+                    selected = viewModel.freq == "weekly",
+                    onClick = { viewModel.onFreqChange("weekly") },
+                    label = { Text("Wöchentlich") }
                 )
             }
             Spacer(Modifier.height(24.dp))

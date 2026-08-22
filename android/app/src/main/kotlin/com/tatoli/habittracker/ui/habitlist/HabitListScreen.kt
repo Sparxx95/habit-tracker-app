@@ -3,6 +3,8 @@ package com.tatoli.habittracker.ui.habitlist
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +30,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,8 +67,10 @@ fun HabitListScreen(
     onAddHabit: () -> Unit,
     onEditHabit: (Long) -> Unit
 ) {
-    val habits by viewModel.habits.collectAsState()
     val viewMonth by viewModel.viewMonth.collectAsState()
+    val availableGroups by viewModel.availableGroups.collectAsState()
+    val filterGroup by viewModel.filterGroup.collectAsState()
+    val listDisplay by viewModel.listDisplay.collectAsState()
 
     Scaffold(
         floatingActionButton = {
@@ -79,21 +85,68 @@ fun HabitListScreen(
                 onPrev = viewModel::prevMonth,
                 onNext = viewModel::nextMonth
             )
+            if (availableGroups.isNotEmpty()) {
+                FilterChipsRow(
+                    availableGroups = availableGroups,
+                    filterGroup = filterGroup,
+                    onSelect = viewModel::selectGroupFilter
+                )
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 88.dp)
             ) {
-                items(habits, key = { it.id }) { habit ->
-                    HabitCard(
-                        habit = habit,
-                        onToggleToday = { viewModel.toggleToday(habit) },
-                        onToggleCell = { dateKey, currentlyDone ->
-                            viewModel.toggleCell(habit.id, dateKey, currentlyDone)
-                        },
-                        onEdit = { onEditHabit(habit.id) }
-                    )
+                listDisplay.sections.forEach { section ->
+                    if (listDisplay.showGroupHeaders) {
+                        item(key = "header-${section.label}") {
+                            Text(
+                                text = section.label.ifEmpty { "Allgemein" },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+                    items(section.habits, key = { it.id }) { habit ->
+                        HabitCard(
+                            habit = habit,
+                            onToggleToday = { viewModel.toggleToday(habit) },
+                            onToggleCell = { dateKey, currentlyDone ->
+                                viewModel.toggleCell(habit.id, dateKey, currentlyDone)
+                            },
+                            onEdit = { onEditHabit(habit.id) }
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FilterChipsRow(
+    availableGroups: List<String>,
+    filterGroup: String?,
+    onSelect: (String?) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterChip(
+            selected = filterGroup == null,
+            onClick = { onSelect(null) },
+            label = { Text("Alle") }
+        )
+        availableGroups.forEach { g ->
+            FilterChip(
+                selected = filterGroup == g,
+                onClick = { onSelect(g) },
+                label = { Text(g) }
+            )
         }
     }
 }

@@ -8,5 +8,6 @@ data class HabitEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val color: String,
-    val freq: String   // "daily" | "weekly"
+    val freq: String,      // "daily" | "weekly"
+    val group: String = "" // "" = keine Gruppe
 )

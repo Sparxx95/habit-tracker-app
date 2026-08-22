@@ -50,7 +50,7 @@ class HabitEditViewModel(
     fun save(onDone: () -> Unit) {
         viewModelScope.launch {
             if (habitId == null) {
-                repository.addHabit(name, color, freq)
+                repository.addHabit(name, color, freq, group = "")
             } else {
                 repository.updateHabit(HabitEntity(id = habitId, name = name, color = color, freq = freq))
             }

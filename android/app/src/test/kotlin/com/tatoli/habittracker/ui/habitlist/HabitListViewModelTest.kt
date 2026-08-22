@@ -134,4 +134,54 @@ class HabitListViewModelTest {
         viewModel.refreshDay()
         assertEquals(startMonth, viewModel.viewMonth.first())
     }
+
+    @Test
+    fun availableGroups_returnsDistinctNonEmptyGroupsInFirstOccurrenceOrder() = runBlocking {
+        db.habitDao().insertHabit(HabitEntity(name = "A", color = "#F2B450", freq = "daily", group = "Fitness"))
+        db.habitDao().insertHabit(HabitEntity(name = "B", color = "#4FC98A", freq = "daily", group = ""))
+        db.habitDao().insertHabit(HabitEntity(name = "C", color = "#5FB4E5", freq = "daily", group = "Lesen"))
+        db.habitDao().insertHabit(HabitEntity(name = "D", color = "#E5766B", freq = "daily", group = "Fitness"))
+        val viewModel = HabitListViewModel(repository)
+
+        val groups = viewModel.availableGroups.first { it.isNotEmpty() }
+        assertEquals(listOf("Fitness", "Lesen"), groups)
+    }
+
+    @Test
+    fun listDisplay_groupsUngroupedFirstThenNamedGroupsInFirstOccurrenceOrder() = runBlocking {
+        db.habitDao().insertHabit(HabitEntity(name = "A", color = "#F2B450", freq = "daily", group = "Fitness"))
+        db.habitDao().insertHabit(HabitEntity(name = "B", color = "#4FC98A", freq = "daily", group = ""))
+        db.habitDao().insertHabit(HabitEntity(name = "C", color = "#5FB4E5", freq = "daily", group = "Lesen"))
+        db.habitDao().insertHabit(HabitEntity(name = "D", color = "#E5766B", freq = "daily", group = "Fitness"))
+        val viewModel = HabitListViewModel(repository)
+
+        val display = viewModel.listDisplay.first { it.sections.isNotEmpty() }
+        assertTrue(display.showGroupHeaders)
+        assertEquals(listOf("", "Fitness", "Lesen"), display.sections.map { it.label })
+        assertEquals(listOf("B"), display.sections[0].habits.map { it.name })
+        assertEquals(listOf("A", "D"), display.sections[1].habits.map { it.name })
+        assertEquals(listOf("C"), display.sections[2].habits.map { it.name })
+    }
+
+    @Test
+    fun listDisplay_withActiveFilter_returnsSingleFlatSectionWithoutHeaders() = runBlocking {
+        db.habitDao().insertHabit(HabitEntity(name = "A", color = "#F2B450", freq = "daily", group = "Fitness"))
+        db.habitDao().insertHabit(HabitEntity(name = "B", color = "#4FC98A", freq = "daily", group = ""))
+        val viewModel = HabitListViewModel(repository)
+        viewModel.listDisplay.first { it.sections.isNotEmpty() }
+
+        viewModel.selectGroupFilter("Fitness")
+        val display = viewModel.listDisplay.first { it.sections.size == 1 && it.sections[0].habits.size == 1 }
+        assertFalse(display.showGroupHeaders)
+        assertEquals(listOf("A"), display.sections[0].habits.map { it.name })
+    }
+
+    @Test
+    fun listDisplay_noNamedGroups_showGroupHeadersIsFalse() = runBlocking {
+        db.habitDao().insertHabit(HabitEntity(name = "A", color = "#F2B450", freq = "daily"))
+        val viewModel = HabitListViewModel(repository)
+
+        val display = viewModel.listDisplay.first { it.sections.isNotEmpty() }
+        assertFalse(display.showGroupHeaders)
+    }
 }

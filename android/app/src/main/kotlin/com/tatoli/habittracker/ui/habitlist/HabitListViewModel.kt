@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -44,6 +45,7 @@ data class HabitDisplayState(
     val name: String,
     val color: String,
     val freq: String,
+    val group: String,
     val doneToday: Boolean,
     val streakCount: Int,
     val monthTotal: Int,
@@ -51,11 +53,24 @@ data class HabitDisplayState(
     val weekCells: List<WeekCell>
 )
 
+data class HabitGroupSection(
+    val label: String,
+    val habits: List<HabitDisplayState>
+)
+
+data class HabitListDisplay(
+    val sections: List<HabitGroupSection>,
+    val showGroupHeaders: Boolean
+)
+
 class HabitListViewModel(private val repository: HabitRepository) : ViewModel() {
 
     private val dayKey = MutableStateFlow(todayKey())
     private val _viewMonth = MutableStateFlow(YearMonth.now())
     val viewMonth: StateFlow<YearMonth> = _viewMonth.asStateFlow()
+
+    private val _filterGroup = MutableStateFlow<String?>(null)
+    val filterGroup: StateFlow<String?> = _filterGroup.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val habits: StateFlow<List<HabitDisplayState>> = combine(
@@ -66,6 +81,34 @@ class HabitListViewModel(private val repository: HabitRepository) : ViewModel() 
         val today = LocalDate.parse(key)
         habitsWithDone.map { toDisplayState(it, month, today) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val availableGroups: StateFlow<List<String>> = habits.map { list ->
+        val seen = LinkedHashSet<String>()
+        list.forEach { h ->
+            val g = h.group.trim()
+            if (g.isNotEmpty()) seen.add(g)
+        }
+        seen.toList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val listDisplay: StateFlow<HabitListDisplay> = combine(habits, _filterGroup) { list, filter ->
+        if (filter != null) {
+            val filtered = list.filter { it.group.trim() == filter }
+            return@combine HabitListDisplay(sections = listOf(HabitGroupSection("", filtered)), showGroupHeaders = false)
+        }
+        val order = LinkedHashSet<String>()
+        list.forEach { order.add(it.group.trim()) }
+        val orderedLabels = order.sortedBy { if (it == "") 0 else 1 }
+        val sections = orderedLabels.map { label ->
+            HabitGroupSection(label, list.filter { it.group.trim() == label })
+        }
+        val showHeaders = list.any { it.group.trim().isNotEmpty() }
+        HabitListDisplay(sections = sections, showGroupHeaders = showHeaders)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HabitListDisplay(emptyList(), false))
+
+    fun selectGroupFilter(group: String?) {
+        _filterGroup.value = group
+    }
 
     fun toggleToday(habit: HabitDisplayState) {
         val today = LocalDate.parse(dayKey.value)
@@ -119,6 +162,7 @@ class HabitListViewModel(private val repository: HabitRepository) : ViewModel() 
                 name = habit.name,
                 color = habit.color,
                 freq = habit.freq,
+                group = habit.group,
                 doneToday = doneKeys.contains(weekKey(today)),
                 streakCount = weekStreak(doneKeys, today),
                 monthTotal = cells.count { it.done },
@@ -141,6 +185,7 @@ class HabitListViewModel(private val repository: HabitRepository) : ViewModel() 
             name = habit.name,
             color = habit.color,
             freq = habit.freq,
+            group = habit.group,
             doneToday = doneKeys.contains(dateKeyOf(today)),
             streakCount = streak(doneKeys, today),
             monthTotal = cells.count { it.done },

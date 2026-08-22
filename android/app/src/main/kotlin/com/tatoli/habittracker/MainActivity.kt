@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,7 @@ private fun HabitTrackerApp(repository: HabitRepository) {
     val listViewModel: HabitListViewModel = viewModel(factory = viewModelFactory {
         initializer { HabitListViewModel(repository) }
     })
+    val availableGroups by listViewModel.availableGroups.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -81,6 +83,7 @@ private fun HabitTrackerApp(repository: HabitRepository) {
             val editViewModel = remember(state) { HabitEditViewModel(repository, habitId = null) }
             HabitEditSheet(
                 viewModel = editViewModel,
+                availableGroups = availableGroups,
                 onDismiss = { sheetState = EditSheetState.Hidden },
                 onSaved = { sheetState = EditSheetState.Hidden }
             )
@@ -91,6 +94,7 @@ private fun HabitTrackerApp(repository: HabitRepository) {
             val editViewModel = remember(state) { HabitEditViewModel(repository, habitId = state.habitId) }
             HabitEditSheet(
                 viewModel = editViewModel,
+                availableGroups = availableGroups,
                 onDismiss = { sheetState = EditSheetState.Hidden },
                 onSaved = { sheetState = EditSheetState.Hidden }
             )

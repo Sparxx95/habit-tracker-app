@@ -13,7 +13,14 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
-@Database(entities = [HabitEntity::class, HabitDoneEntity::class], version = 2, exportSchema = true)
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE habits ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("UPDATE habits SET createdAt = ? WHERE createdAt = 0", arrayOf(System.currentTimeMillis()))
+    }
+}
+
+@Database(entities = [HabitEntity::class, HabitDoneEntity::class], version = 3, exportSchema = true)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun habitDao(): HabitDao
 
@@ -26,7 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "habit-tracker.db"
-                ).addMigrations(MIGRATION_1_2).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { INSTANCE = it }
             }
     }
 }

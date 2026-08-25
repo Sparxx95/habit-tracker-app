@@ -27,6 +27,7 @@ class HabitEditViewModel(
         private set
     var group by mutableStateOf("")
         private set
+    private var createdAt by mutableStateOf(0L)
     var loaded by mutableStateOf(habitId == null)
         private set
 
@@ -40,6 +41,7 @@ class HabitEditViewModel(
                     color = habit.color
                     freq = habit.freq
                     group = habit.group
+                    createdAt = habit.createdAt
                 }
                 loaded = true
             }
@@ -54,9 +56,11 @@ class HabitEditViewModel(
     fun save(onDone: () -> Unit) {
         viewModelScope.launch {
             if (habitId == null) {
-                repository.addHabit(name, color, freq, group)
+                repository.addHabit(name, color, freq, group, System.currentTimeMillis())
             } else {
-                repository.updateHabit(HabitEntity(id = habitId, name = name, color = color, freq = freq, group = group))
+                repository.updateHabit(
+                    HabitEntity(id = habitId, name = name, color = color, freq = freq, group = group, createdAt = createdAt)
+                )
             }
             onDone()
         }
@@ -65,7 +69,9 @@ class HabitEditViewModel(
     fun delete(onDone: () -> Unit) {
         val id = habitId ?: return
         viewModelScope.launch {
-            repository.deleteHabit(HabitEntity(id = id, name = name, color = color, freq = freq, group = group))
+            repository.deleteHabit(
+                HabitEntity(id = id, name = name, color = color, freq = freq, group = group, createdAt = createdAt)
+            )
             onDone()
         }
     }

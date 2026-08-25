@@ -9,5 +9,6 @@ data class HabitEntity(
     val name: String,
     val color: String,
     val freq: String,      // "daily" | "weekly"
-    val group: String = "" // "" = keine Gruppe
+    val group: String = "", // "" = keine Gruppe
+    val createdAt: Long = 0 // Epoch-Millis, System.currentTimeMillis() bei Anlage
 )

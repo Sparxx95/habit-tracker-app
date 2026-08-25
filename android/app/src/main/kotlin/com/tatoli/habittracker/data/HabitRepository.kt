@@ -6,8 +6,8 @@ class HabitRepository(private val dao: HabitDao) {
 
     fun observeHabitsWithDone(): Flow<List<HabitWithDoneEntities>> = dao.observeHabitsWithDone()
 
-    suspend fun addHabit(name: String, color: String, freq: String, group: String): Long =
-        dao.insertHabit(HabitEntity(name = name, color = color, freq = freq, group = group))
+    suspend fun addHabit(name: String, color: String, freq: String, group: String, createdAt: Long): Long =
+        dao.insertHabit(HabitEntity(name = name, color = color, freq = freq, group = group, createdAt = createdAt))
 
     suspend fun updateHabit(habit: HabitEntity) = dao.updateHabit(habit)
 

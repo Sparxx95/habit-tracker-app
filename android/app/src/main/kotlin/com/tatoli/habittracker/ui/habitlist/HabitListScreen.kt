@@ -23,9 +23,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Card
@@ -65,7 +67,9 @@ private val DAY_LABELS = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
 fun HabitListScreen(
     viewModel: HabitListViewModel,
     onAddHabit: () -> Unit,
-    onEditHabit: (Long) -> Unit
+    onEditHabit: (Long) -> Unit,
+    onOpenStats: () -> Unit,
+    onOpenDashboard: () -> Unit
 ) {
     val viewMonth by viewModel.viewMonth.collectAsState()
     val availableGroups by viewModel.availableGroups.collectAsState()
@@ -74,8 +78,16 @@ fun HabitListScreen(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddHabit) {
-                Icon(Icons.Default.Add, contentDescription = "Habit hinzufügen")
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FloatingActionButton(onClick = onOpenDashboard) {
+                    Icon(Icons.Default.Insights, contentDescription = "Dashboard")
+                }
+                FloatingActionButton(onClick = onOpenStats) {
+                    Icon(Icons.Default.BarChart, contentDescription = "Statistik")
+                }
+                FloatingActionButton(onClick = onAddHabit) {
+                    Icon(Icons.Default.Add, contentDescription = "Habit hinzufügen")
+                }
             }
         }
     ) { padding ->

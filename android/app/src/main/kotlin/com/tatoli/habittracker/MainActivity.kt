@@ -31,6 +31,12 @@ private sealed interface EditSheetState {
     data class EditExisting(val habitId: Long) : EditSheetState
 }
 
+private sealed interface AppScreen {
+    data object List : AppScreen
+    data object Stats : AppScreen
+    data object Dashboard : AppScreen
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +55,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun HabitTrackerApp(repository: HabitRepository) {
     var sheetState by remember { mutableStateOf<EditSheetState>(EditSheetState.Hidden) }
+    var currentScreen by remember { mutableStateOf<AppScreen>(AppScreen.List) }
 
     val listViewModel: HabitListViewModel = viewModel(factory = viewModelFactory {
         initializer { HabitListViewModel(repository) }
@@ -66,11 +73,35 @@ private fun HabitTrackerApp(repository: HabitRepository) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    HabitListScreen(
-        viewModel = listViewModel,
-        onAddHabit = { sheetState = EditSheetState.AddNew },
-        onEditHabit = { id -> sheetState = EditSheetState.EditExisting(id) }
-    )
+    when (currentScreen) {
+        is AppScreen.List -> {
+            HabitListScreen(
+                viewModel = listViewModel,
+                onAddHabit = { sheetState = EditSheetState.AddNew },
+                onEditHabit = { id -> sheetState = EditSheetState.EditExisting(id) },
+                onOpenStats = { currentScreen = AppScreen.Stats },
+                onOpenDashboard = { currentScreen = AppScreen.Dashboard }
+            )
+        }
+        is AppScreen.Stats -> {
+            val statsViewModel = remember(currentScreen) {
+                com.tatoli.habittracker.ui.stats.StatsViewModel(repository)
+            }
+            com.tatoli.habittracker.ui.stats.StatsScreen(
+                viewModel = statsViewModel,
+                onBack = { currentScreen = AppScreen.List }
+            )
+        }
+        is AppScreen.Dashboard -> {
+            val dashboardViewModel = remember(currentScreen) {
+                com.tatoli.habittracker.ui.dashboard.DashboardViewModel(repository)
+            }
+            com.tatoli.habittracker.ui.dashboard.DashboardScreen(
+                viewModel = dashboardViewModel,
+                onBack = { currentScreen = AppScreen.List }
+            )
+        }
+    }
 
     when (val state = sheetState) {
         is EditSheetState.Hidden -> Unit

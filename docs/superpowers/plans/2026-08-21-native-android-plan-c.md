@@ -1340,13 +1340,21 @@ git commit -m "feat: Filter-Chips und Gruppen-Überschriften in der Habit-Liste"
 - Push auf `main` in `Sparxx95/habit-tracker-app`.
 - `android-build.yml` läuft automatisch (push-Trigger auf `android/**`) —
   grünen Lauf auf einem echten `ubuntu-latest`-Runner abwarten.
-- APK aus dem Actions-Artifact herunterladen, im Windows-Emulator
-  installieren (alte Version vorher deinstallieren) und manuell testen:
-  Habit einer neuen Gruppe zuweisen ("+ Neue Gruppe…"), Habit einer
-  bestehenden Gruppe zuweisen, Gruppen-Überschriften in der Liste prüfen,
-  Filter-Chip antippen und prüfen, dass nur Habits dieser Gruppe
-  angezeigt werden, "Alle" wieder antippen. **Wichtig:** da dies die
-  erste echte Schema-Migration ist, sollten die im Emulator bereits
-  vorhandenen Habits (aus Plan A/B-Tests) nach dem Update weiterhin
-  vollständig vorhanden sein (Name, Farbe, Rhythmus, komplette
-  Done-Historie/Streak) — kein Datenverlust durch die Migration.
+- APK aus dem Actions-Artifact herunterladen und im Windows-Emulator
+  **über die bestehende Installation drüberinstallieren, ohne vorher zu
+  deinstallieren** (z. B. `adb install -r app-debug.apk`, oder per
+  Drag-and-Drop ohne vorheriges Entfernen der App). Das unterscheidet sich
+  bewusst vom Deinstallieren-und-neu-installieren-Vorgehen aus den Plan
+  A/B-Tests: dort war das nötig, um einen Debug-Signing-Key-Mismatch
+  aufzulösen, hier geht es aber um den Test einer echten Schema-Migration
+  — ein vorheriges Deinstallieren würde die Datenbankdatei löschen, sodass
+  beim nächsten Start `onCreate` eine leere v2-Datenbank anlegt und
+  `MIGRATION_1_2` nie tatsächlich läuft. Danach manuell testen: Habit
+  einer neuen Gruppe zuweisen ("+ Neue Gruppe…"), Habit einer bestehenden
+  Gruppe zuweisen, Gruppen-Überschriften in der Liste prüfen, Filter-Chip
+  antippen und prüfen, dass nur Habits dieser Gruppe angezeigt werden,
+  "Alle" wieder antippen. **Wichtig:** da dies die erste echte
+  Schema-Migration ist, sollten die im Emulator bereits vorhandenen
+  Habits (aus Plan A/B-Tests) nach dem Update weiterhin vollständig
+  vorhanden sein (Name, Farbe, Rhythmus, komplette Done-Historie/Streak)
+  — kein Datenverlust durch die Migration.

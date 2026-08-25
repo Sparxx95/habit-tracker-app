@@ -91,9 +91,19 @@ class HabitListViewModel(private val repository: HabitRepository) : ViewModel() 
         seen.toList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    init {
+        viewModelScope.launch {
+            availableGroups.collect { groups ->
+                _filterGroup.value?.let { current ->
+                    if (current !in groups) _filterGroup.value = null
+                }
+            }
+        }
+    }
+
     val listDisplay: StateFlow<HabitListDisplay> = combine(habits, _filterGroup) { list, filter ->
         if (filter != null) {
-            val filtered = list.filter { it.group.trim() == filter }
+            val filtered = list.filter { it.group.trim() == filter.trim() }
             return@combine HabitListDisplay(sections = listOf(HabitGroupSection("", filtered)), showGroupHeaders = false)
         }
         val order = LinkedHashSet<String>()

@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,7 +46,12 @@ fun HabitEditSheet(
     onSaved: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(modifier = Modifier.padding(24.dp)) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(24.dp)
+        ) {
             Text(
                 text = if (viewModel.isEditing) "Habit bearbeiten" else "Habit anlegen",
                 style = MaterialTheme.typography.titleLarge
@@ -78,9 +86,6 @@ fun HabitEditSheet(
             }
             Spacer(Modifier.height(16.dp))
 
-            // Nur "Täglich" verfügbar: "Wöchentlich" hätte noch keine Wochen-Key-bewusste
-            // Abfrage/Verarbeitung (ViewModel/DAO) hinter sich und würde still wie "daily"
-            // behandelt. Kehrt zurück, sobald ein späterer Plan echte Wochensemantik liefert.
             Text("Rhythmus", style = MaterialTheme.typography.labelLarge)
             Row(modifier = Modifier.padding(top = 8.dp)) {
                 FilterChip(

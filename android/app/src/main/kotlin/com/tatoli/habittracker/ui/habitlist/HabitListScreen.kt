@@ -85,7 +85,7 @@ fun HabitListScreen(
                 onPrev = viewModel::prevMonth,
                 onNext = viewModel::nextMonth
             )
-            if (availableGroups.isNotEmpty()) {
+            if (availableGroups.isNotEmpty() || filterGroup != null) {
                 FilterChipsRow(
                     availableGroups = availableGroups,
                     filterGroup = filterGroup,

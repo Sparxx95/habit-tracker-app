@@ -184,4 +184,20 @@ class HabitListViewModelTest {
         val display = viewModel.listDisplay.first { it.sections.isNotEmpty() }
         assertFalse(display.showGroupHeaders)
     }
+
+    @Test
+    fun selectGroupFilter_invalidatedWhenFilteredGroupDisappears() = runBlocking {
+        db.habitDao().insertHabit(HabitEntity(name = "A", color = "#F2B450", freq = "daily", group = "Fitness"))
+        val viewModel = HabitListViewModel(repository)
+        val habitId = viewModel.habits.first { it.isNotEmpty() }.first().id
+
+        viewModel.availableGroups.first { it == listOf("Fitness") }
+        viewModel.selectGroupFilter("Fitness")
+        assertEquals("Fitness", viewModel.filterGroup.first())
+
+        val entity = repository.getHabitById(habitId)!!
+        repository.deleteHabit(entity)
+
+        assertEquals(null, viewModel.filterGroup.first { it == null })
+    }
 }

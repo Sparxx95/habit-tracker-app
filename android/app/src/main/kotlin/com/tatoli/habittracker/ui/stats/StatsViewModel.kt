@@ -30,6 +30,15 @@ data class StatsTable(val columns: List<StatsTableColumn>, val rows: List<StatsT
 data class WeeklyStripCell(val isoWeekNumber: Int, val done: Boolean, val active: Boolean)
 data class WeeklyStripRow(val name: String, val color: String, val cells: List<WeeklyStripCell>)
 data class StatsLegendEntry(val name: String, val color: String, val streak: Int, val successRatePct: Int)
+data class RingChartData(
+    val ringNames: List<String>,
+    val ringColors: List<String>,
+    val sectorLabels: List<String>,
+    val states: List<List<DayState>>, // states[ringIndex][sectorIndex]
+    val highlightSectorIndex: Int
+)
+
+private val EMPTY_RING_CHART = RingChartData(emptyList(), emptyList(), emptyList(), emptyList(), -1)
 
 class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
 
@@ -93,6 +102,48 @@ class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
             WeeklyStripRow(entry.habit.name, entry.habit.color, cells)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val dailyRingChart: StateFlow<RingChartData> = combine(habitsWithDone, _viewMonth) { list, month ->
+        val daily = list.filter { it.habit.freq == "daily" }
+        val today = LocalDate.now()
+        val highlight = if (YearMonth.from(today) == month) today.dayOfMonth - 1 else -1
+        RingChartData(
+            ringNames = daily.map { it.habit.name },
+            ringColors = daily.map { it.habit.color },
+            sectorLabels = (1..month.lengthOfMonth()).map { it.toString() },
+            states = daily.map { entry ->
+                (1..month.lengthOfMonth()).map { day -> dayState(entry, month.atDay(day), today) }
+            },
+            highlightSectorIndex = highlight
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EMPTY_RING_CHART)
+
+    val weeklyRingChart: StateFlow<RingChartData> = combine(habitsWithDone, _viewMonth) { list, month ->
+        val weekly = list.filter { it.habit.freq == "weekly" }
+        val today = LocalDate.now()
+        val nowWeekKey = weekKey(today)
+        val mondays = monthWeeks(month)
+        var highlight = -1
+        mondays.forEachIndexed { i, monday -> if (weekKey(monday) == nowWeekKey) highlight = i }
+        RingChartData(
+            ringNames = weekly.map { it.habit.name },
+            ringColors = weekly.map { it.habit.color },
+            sectorLabels = mondays.map { isoWeekNumber(it).toString() },
+            states = weekly.map { entry ->
+                val doneKeys = entry.doneEntries.map { it.dateKey }.toSet()
+                val startWeekKey = weekKey(mondayOf(createdDate(entry.habit.createdAt)))
+                mondays.map { monday ->
+                    val wk = weekKey(monday)
+                    when {
+                        doneKeys.contains(wk) -> DayState.DONE
+                        wk < startWeekKey || wk > nowWeekKey -> DayState.OFF
+                        else -> DayState.MISS
+                    }
+                }
+            },
+            highlightSectorIndex = highlight
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EMPTY_RING_CHART)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val legend: StateFlow<List<StatsLegendEntry>> = combine(habitsWithDone, _freq) { list, freqValue ->

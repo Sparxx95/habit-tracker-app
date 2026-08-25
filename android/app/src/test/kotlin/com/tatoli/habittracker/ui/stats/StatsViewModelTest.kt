@@ -98,6 +98,28 @@ class StatsViewModelTest {
     }
 
     @Test
+    fun dailyRingChart_hasOneRingPerDailyHabitAndOneSectorPerDay() = runBlocking {
+        db.habitDao().insertHabit(
+            HabitEntity(name = "Lesen", color = "#F2B450", freq = "daily", createdAt = createdAtOf(YearMonth.now().atDay(1)))
+        )
+        val viewModel = StatsViewModel(repository)
+        val chart = viewModel.dailyRingChart.first { it.ringNames.isNotEmpty() }
+        assertEquals(listOf("Lesen"), chart.ringNames)
+        assertEquals(YearMonth.now().lengthOfMonth(), chart.sectorLabels.size)
+        assertEquals(chart.sectorLabels.size, chart.states[0].size)
+    }
+
+    @Test
+    fun weeklyRingChart_highlightsCurrentWeekWhenViewingCurrentMonth() = runBlocking {
+        db.habitDao().insertHabit(
+            HabitEntity(name = "Sport", color = "#4FC98A", freq = "weekly", createdAt = createdAtOf(LocalDate.now()))
+        )
+        val viewModel = StatsViewModel(repository)
+        val chart = viewModel.weeklyRingChart.first { it.ringNames.isNotEmpty() }
+        assertTrue(chart.highlightSectorIndex >= 0)
+    }
+
+    @Test
     fun nextMonth_neverGoesPastCurrentMonth() = runBlocking {
         val viewModel = StatsViewModel(repository)
         val start = viewModel.viewMonth.first()

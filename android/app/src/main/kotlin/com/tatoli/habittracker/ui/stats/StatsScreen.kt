@@ -92,7 +92,9 @@ fun StatsScreen(viewModel: StatsViewModel, onBack: () -> Unit) {
                     LegendView(legend)
                 }
                 freq == "daily" && mode == "circle" -> {
-                    // Kreis-Ansicht: siehe Task 5 (RingStatsChart)
+                    // Kreis: Namen stehen an den Ringen selbst – keine separate Legende (wie Web)
+                    val dailyRingChart by viewModel.dailyRingChart.collectAsState()
+                    RingStatsChart(dailyRingChart, modifier = Modifier.fillMaxWidth().padding(16.dp))
                 }
                 freq == "weekly" && !hasWeeklyHabits ->
                     EmptyMessage("Keine wöchentlichen Gewohnheiten angelegt.")
@@ -102,7 +104,8 @@ fun StatsScreen(viewModel: StatsViewModel, onBack: () -> Unit) {
                     LegendView(legend)
                 }
                 freq == "weekly" && mode == "circle" -> {
-                    // Kreis-Ansicht (KW-Sektoren): siehe Task 5
+                    val weeklyRingChart by viewModel.weeklyRingChart.collectAsState()
+                    RingStatsChart(weeklyRingChart, modifier = Modifier.fillMaxWidth().padding(16.dp))
                 }
             }
         }

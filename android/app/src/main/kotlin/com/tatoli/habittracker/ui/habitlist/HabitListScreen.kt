@@ -106,7 +106,7 @@ fun HabitListScreen(
             }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 88.dp)
+                contentPadding = PaddingValues(bottom = 216.dp)
             ) {
                 listDisplay.sections.forEach { section ->
                     if (listDisplay.showGroupHeaders) {

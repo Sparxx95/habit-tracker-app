@@ -1,6 +1,7 @@
 package com.tatoli.habittracker.ui.stats
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -165,11 +167,23 @@ private fun StatsTableView(table: StatsTable) {
         Column {
             Text("Tag", style = MaterialTheme.typography.labelSmall, modifier = Modifier.size(38.dp, 24.dp))
             table.rows.forEach { row ->
-                Text(
-                    text = row.day.toString(),
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.size(38.dp, 28.dp).padding(top = 4.dp)
-                )
+                Box(
+                    modifier = Modifier.size(38.dp, 28.dp).padding(top = 4.dp, end = 2.dp)
+                        .then(
+                            if (row.isToday) {
+                                Modifier.border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp))
+                            } else {
+                                Modifier
+                            }
+                        ),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = row.day.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
             }
         }
         table.columns.forEachIndexed { colIndex, column ->
@@ -211,15 +225,23 @@ private fun WeeklyStripView(row: WeeklyStripRow) {
                 Box(
                     modifier = Modifier.weight(1f).size(32.dp).padding(2.dp)
                         .background(
-                            if (cell.done) parseHexColor(row.color) else Color.Transparent
+                            if (cell.active && cell.done) parseHexColor(row.color) else Color.Transparent
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "KW${cell.isoWeekNumber}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (cell.done) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                    )
+                    if (cell.active) {
+                        Text(
+                            text = "KW${cell.isoWeekNumber}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (cell.done) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                        )
+                    } else {
+                        Text(
+                            text = "KW${cell.isoWeekNumber}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)
+                        )
+                    }
                 }
             }
         }

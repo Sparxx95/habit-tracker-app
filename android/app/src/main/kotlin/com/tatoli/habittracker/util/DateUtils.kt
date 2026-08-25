@@ -1,7 +1,9 @@
 package com.tatoli.habittracker.util
 
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
 
@@ -56,3 +58,6 @@ fun weekStreak(doneWeekKeys: Set<String>, today: LocalDate = LocalDate.now()): I
     }
     return count
 }
+
+fun createdDate(createdAt: Long): LocalDate =
+    Instant.ofEpochMilli(createdAt).atZone(ZoneId.systemDefault()).toLocalDate()

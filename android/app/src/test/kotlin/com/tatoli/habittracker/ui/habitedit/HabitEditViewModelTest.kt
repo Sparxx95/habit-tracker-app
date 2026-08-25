@@ -1,5 +1,6 @@
 package com.tatoli.habittracker.ui.habitedit
 
+import androidx.compose.runtime.snapshotFlow
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.tatoli.habittracker.data.AppDatabase
@@ -67,6 +68,13 @@ class HabitEditViewModelTest {
             HabitEntity(name = "Lesen", color = "#F2B450", freq = "daily", createdAt = originalCreatedAt)
         )
         val viewModel = HabitEditViewModel(repository, habitId = habitId)
+        // Wartet, bis der init-Ladevorgang wirklich abgeschlossen ist, bevor gespeichert wird —
+        // ohne das würde save() ggf. vor dem Laden laufen und createdAt stünde noch auf dem
+        // Default 0L. Die reale UI (HabitEditSheet.kt) gated aktuell nicht auf `loaded` (siehe
+        // Plan C, bereits als bekannte, geringfügige Vorbedingung dokumentiert) — das hier
+        // testet den beabsichtigten Steady-State (Bearbeiten nach vollständigem Laden), nicht
+        // dieses vorbestehende, ungetestete Rennen.
+        snapshotFlow { viewModel.loaded }.first { it }
         viewModel.onNameChange("Lesen (bearbeitet)")
         viewModel.save {}
 

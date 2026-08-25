@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun DashboardScreen(viewModel: DashboardViewModel, onBack: () -> Unit) {
     val dashMode by viewModel.dashMode.collectAsState()
+    val hasAnyHabits by viewModel.hasAnyHabits.collectAsState()
     val overview by viewModel.overview.collectAsState()
     val weekdayPattern by viewModel.weekdayPattern.collectAsState()
     val groupComparison by viewModel.groupComparison.collectAsState()
@@ -52,6 +53,23 @@ fun DashboardScreen(viewModel: DashboardViewModel, onBack: () -> Unit) {
             )
         }
     ) { padding ->
+        // Wirklich null Habits (unabhängig vom Rhythmus-Filter): statt vier leerer
+        // Sektionen inkl. eines 6-Balken-Trends, der fälschlich "0% in jedem Monat"
+        // suggeriert, eine einzige neutrale Meldung.
+        if (!hasAnyHabits && dashMode == "all") {
+            Box(
+                modifier = Modifier.padding(padding).fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Noch keine Gewohnheiten angelegt.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            return@Scaffold
+        }
+
         Column(modifier = Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -62,7 +80,14 @@ fun DashboardScreen(viewModel: DashboardViewModel, onBack: () -> Unit) {
                 }
             }
 
-            DashboardSection(title = "Gesamtübersicht", entries = overview, emptyText = "Keine Gewohnheiten angelegt.")
+            // Habits existieren, aber ggf. keine passt zum gewählten Rhythmus-Filter –
+            // dafür eine zum Filter passende Meldung statt der generischen "keine Habits".
+            val overviewEmptyText = when (dashMode) {
+                "weekly" -> "Keine wöchentlichen Gewohnheiten angelegt."
+                "daily" -> "Keine täglichen Gewohnheiten angelegt."
+                else -> "Keine Gewohnheiten angelegt."
+            }
+            DashboardSection(title = "Gesamtübersicht", entries = overview, emptyText = overviewEmptyText)
             DashboardSection(title = "Wochentags-Muster", entries = weekdayPattern, emptyText = "Nur bei täglichen Gewohnheiten verfügbar.")
             DashboardSection(
                 title = "Gruppen-Vergleich",

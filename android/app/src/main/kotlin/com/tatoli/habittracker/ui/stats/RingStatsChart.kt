@@ -12,6 +12,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -41,7 +43,12 @@ fun RingStatsChart(data: RingChartData, modifier: Modifier = Modifier) {
     val ringWidth = (OUTER - INNER) / ringCount
     val perSector = SWEEP_DEG / sectorCount
 
-    Canvas(modifier = modifier.fillMaxWidth().aspectRatio(VIEWPORT_W / VIEWPORT_H)) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(VIEWPORT_W / VIEWPORT_H)
+            .semantics { contentDescription = "Monatsübersicht als Ring-Diagramm mit Habit-Namen" }
+    ) {
         val scale = size.width / VIEWPORT_W
         val cx = CX * scale
         val cy = CY * scale
@@ -95,7 +102,9 @@ fun RingStatsChart(data: RingChartData, modifier: Modifier = Modifier) {
         // 2. Ringsegmente
         for (ringIndex in 0 until ringCount) {
             val midRadius = (INNER + (ringIndex + 0.5f) * ringWidth) * scale
-            val strokeWidth = (ringWidth - 2 * RADIAL_INSET) * scale
+            // Bei vielen Ringen in einem festen Radiusband kann (ringWidth - 2*RADIAL_INSET)
+            // auf 0 oder negativ fallen – das wäre bei Stroke ein Rendering-No-op bzw. Risiko.
+            val strokeWidth = ((ringWidth - 2 * RADIAL_INSET) * scale).coerceAtLeast(0.5f * scale)
             val ringColor = parseRingColor(data.ringColors[ringIndex])
             for (sectorIndex in 0 until sectorCount) {
                 val a0 = sectorIndex * perSector

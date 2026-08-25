@@ -11,6 +11,7 @@ import com.tatoli.habittracker.util.maxStreakEver
 import com.tatoli.habittracker.util.mondayOf
 import com.tatoli.habittracker.util.monthWeeks
 import com.tatoli.habittracker.util.successRate
+import com.tatoli.habittracker.util.todayKey
 import com.tatoli.habittracker.util.weekKey
 import java.time.LocalDate
 import java.time.YearMonth
@@ -42,6 +43,8 @@ private val EMPTY_RING_CHART = RingChartData(emptyList(), emptyList(), emptyList
 
 class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
 
+    private val dayKey = MutableStateFlow(todayKey())
+
     private val _viewMonth = MutableStateFlow(YearMonth.now())
     val viewMonth: StateFlow<YearMonth> = _viewMonth.asStateFlow()
 
@@ -59,7 +62,16 @@ class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
     fun selectFreq(value: String) { _freq.value = value }
     fun selectMode(value: String) { _mode.value = value }
 
-    private val habitsWithDone = repository.observeHabitsWithDone()
+    fun refreshDay() {
+        dayKey.value = todayKey()
+    }
+
+    // Einmal geteilter StateFlow statt 7x unabhängigem .stateIn(...) auf den rohen
+    // Repository-Flow: sonst würde Rooms zugrunde liegende @Transaction-Query bei jeder
+    // Invalidierung für jeden der 7 Konsumenten separat neu laufen und materialisieren.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val habitsWithDone: StateFlow<List<HabitWithDoneEntities>> = repository.observeHabitsWithDone()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val hasDailyHabits: StateFlow<Boolean> = habitsWithDone
@@ -71,22 +83,27 @@ class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
         .map { list -> list.any { it.habit.freq == "weekly" } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val table: StateFlow<StatsTable> = combine(habitsWithDone, _viewMonth) { list, month ->
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val table: StateFlow<StatsTable> = combine(habitsWithDone, _viewMonth, dayKey) { list, month, key ->
         val daily = list.filter { it.habit.freq == "daily" }
         if (daily.isEmpty()) return@combine StatsTable(emptyList(), emptyList())
-        val today = LocalDate.now()
+        val today = LocalDate.parse(key)
         val columns = daily.map { StatsTableColumn(it.habit.name, it.habit.color) }
         val rows = (1..month.lengthOfMonth()).map { day ->
             val date = month.atDay(day)
-            val states = daily.map { entry -> dayState(entry, date, today) }
+            val states = daily.map { entry ->
+                val doneKeys = entry.doneEntries.map { it.dateKey }.toSet()
+                dayState(entry, doneKeys, date, today)
+            }
             StatsTableRow(day, date == today, states)
         }
         StatsTable(columns, rows)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StatsTable(emptyList(), emptyList()))
 
-    val weeklyStrips: StateFlow<List<WeeklyStripRow>> = combine(habitsWithDone, _viewMonth) { list, month ->
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val weeklyStrips: StateFlow<List<WeeklyStripRow>> = combine(habitsWithDone, _viewMonth, dayKey) { list, month, key ->
         val weekly = list.filter { it.habit.freq == "weekly" }
-        val today = LocalDate.now()
+        val today = LocalDate.parse(key)
         val nowWeekKey = weekKey(today)
         weekly.map { entry ->
             val doneKeys = entry.doneEntries.map { it.dateKey }.toSet()
@@ -103,24 +120,27 @@ class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val dailyRingChart: StateFlow<RingChartData> = combine(habitsWithDone, _viewMonth) { list, month ->
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val dailyRingChart: StateFlow<RingChartData> = combine(habitsWithDone, _viewMonth, dayKey) { list, month, key ->
         val daily = list.filter { it.habit.freq == "daily" }
-        val today = LocalDate.now()
+        val today = LocalDate.parse(key)
         val highlight = if (YearMonth.from(today) == month) today.dayOfMonth - 1 else -1
         RingChartData(
             ringNames = daily.map { it.habit.name },
             ringColors = daily.map { it.habit.color },
             sectorLabels = (1..month.lengthOfMonth()).map { it.toString() },
             states = daily.map { entry ->
-                (1..month.lengthOfMonth()).map { day -> dayState(entry, month.atDay(day), today) }
+                val doneKeys = entry.doneEntries.map { it.dateKey }.toSet()
+                (1..month.lengthOfMonth()).map { day -> dayState(entry, doneKeys, month.atDay(day), today) }
             },
             highlightSectorIndex = highlight
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EMPTY_RING_CHART)
 
-    val weeklyRingChart: StateFlow<RingChartData> = combine(habitsWithDone, _viewMonth) { list, month ->
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val weeklyRingChart: StateFlow<RingChartData> = combine(habitsWithDone, _viewMonth, dayKey) { list, month, key ->
         val weekly = list.filter { it.habit.freq == "weekly" }
-        val today = LocalDate.now()
+        val today = LocalDate.parse(key)
         val nowWeekKey = weekKey(today)
         val mondays = monthWeeks(month)
         var highlight = -1
@@ -146,8 +166,8 @@ class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EMPTY_RING_CHART)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val legend: StateFlow<List<StatsLegendEntry>> = combine(habitsWithDone, _freq) { list, freqValue ->
-        val today = LocalDate.now()
+    val legend: StateFlow<List<StatsLegendEntry>> = combine(habitsWithDone, _freq, dayKey) { list, freqValue, key ->
+        val today = LocalDate.parse(key)
         list.filter { it.habit.freq == freqValue }.map { entry ->
             StatsLegendEntry(
                 name = entry.habit.name,
@@ -158,8 +178,7 @@ class StatsViewModel(private val repository: HabitRepository) : ViewModel() {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    private fun dayState(entry: HabitWithDoneEntities, date: LocalDate, today: LocalDate): DayState {
-        val doneKeys = entry.doneEntries.map { it.dateKey }.toSet()
+    private fun dayState(entry: HabitWithDoneEntities, doneKeys: Set<String>, date: LocalDate, today: LocalDate): DayState {
         val ds = dateKeyOf(date)
         if (doneKeys.contains(ds)) return DayState.DONE
         val created = createdDate(entry.habit.createdAt)

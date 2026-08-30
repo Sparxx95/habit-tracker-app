@@ -47,6 +47,7 @@ fun buildHabitsXml(habits: List<HabitWithDoneEntities>): String {
 private val DAY_KEY_PATTERN = Regex("^\\d{4}(-\\d{2}-\\d{2}|-W\\d{2})$")
 
 fun parseHabitsXml(xml: String, importedAt: Long): List<ParsedHabit> {
+    val cleanXml = xml.removePrefix("﻿")
     val factory = DocumentBuilderFactory.newInstance()
     try {
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -57,7 +58,7 @@ fun parseHabitsXml(xml: String, importedAt: Long): List<ParsedHabit> {
         // device owner from local storage via the system file picker, not untrusted network input.
     }
     val document = try {
-        factory.newDocumentBuilder().parse(InputSource(StringReader(xml)))
+        factory.newDocumentBuilder().parse(InputSource(StringReader(cleanXml)))
     } catch (e: Exception) {
         throw IllegalArgumentException("XML ungültig", e)
     }

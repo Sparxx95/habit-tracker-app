@@ -186,7 +186,10 @@ private fun HabitTrackerApp(repository: HabitRepository) {
         // Frische Instanz pro Öffnen, gleicher Grund wie bei den Edit-Sheet-ViewModels:
         // kein Zwischenspeichern von z. B. einer Fehlermeldung aus einem vorherigen Öffnen.
         val backupViewModel = remember(showBackupSheet) {
-            val prefs = context.getSharedPreferences("backup_meta", android.content.Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences(
+                com.tatoli.habittracker.ui.backup.BackupViewModel.BACKUP_PREFS_NAME,
+                android.content.Context.MODE_PRIVATE
+            )
             com.tatoli.habittracker.ui.backup.BackupViewModel(repository, prefs)
         }
         com.tatoli.habittracker.ui.backup.BackupSheet(

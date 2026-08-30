@@ -100,4 +100,67 @@ class BackupViewModelTest {
         viewModel.importXml("not valid xml")
         Unit
     }
+
+    @Test
+    fun lastBackupText_oneDayAgo_showsGestern() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences("backup_meta_test", Context.MODE_PRIVATE)
+        prefs.edit().putLong("lastBackupAt", System.currentTimeMillis() - 86_400_000L).commit()
+        val vm = BackupViewModel(repository, prefs)
+        assertEquals("Datensicherung · letztes Backup: gestern", vm.lastBackupText.value)
+    }
+
+    @Test
+    fun lastBackupText_severalDaysAgo_showsDayCount() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val prefs = context.getSharedPreferences("backup_meta_test", Context.MODE_PRIVATE)
+        prefs.edit().putLong("lastBackupAt", System.currentTimeMillis() - 5 * 86_400_000L).commit()
+        val vm = BackupViewModel(repository, prefs)
+        assertEquals("Datensicherung · letztes Backup: vor 5 Tagen", vm.lastBackupText.value)
+    }
+
+    @Test
+    fun exportThenImport_roundTripsAllDataUnchanged() = runBlocking {
+        db.habitDao().insertHabit(
+            HabitEntity(name = "Lesen", color = "#F2B450", freq = "daily", group = "Bildung", createdAt = 1000L)
+        )
+        db.habitDao().insertHabit(
+            HabitEntity(name = "Sport", color = "#4FC98A", freq = "weekly", createdAt = 2000L)
+        )
+        val lesenId = repository.observeHabitsWithDone().first { it.size == 2 }.first { it.habit.name == "Lesen" }.habit.id
+        val sportId = repository.observeHabitsWithDone().first().first { it.habit.name == "Sport" }.habit.id
+        db.habitDao().insertDone(com.tatoli.habittracker.data.HabitDoneEntity(lesenId, "2026-08-01"))
+        db.habitDao().insertDone(com.tatoli.habittracker.data.HabitDoneEntity(lesenId, "2026-08-02"))
+        db.habitDao().insertDone(com.tatoli.habittracker.data.HabitDoneEntity(sportId, "2026-W31"))
+
+        val xml = viewModel.buildExportXml()
+        viewModel.importXml(xml)
+
+        val result = repository.observeHabitsWithDone().first()
+        assertEquals(2, result.size)
+        val lesen = result.first { it.habit.name == "Lesen" }
+        assertEquals("#F2B450", lesen.habit.color)
+        assertEquals("Bildung", lesen.habit.group)
+        assertEquals(1000L, lesen.habit.createdAt)
+        assertEquals(setOf("2026-08-01", "2026-08-02"), lesen.doneEntries.map { it.dateKey }.toSet())
+        val sport = result.first { it.habit.name == "Sport" }
+        assertEquals("weekly", sport.habit.freq)
+        assertEquals(2000L, sport.habit.createdAt)
+        assertEquals(setOf("2026-W31"), sport.doneEntries.map { it.dateKey }.toSet())
+    }
+
+    @Test
+    fun importXml_invalidXml_leavesExistingDataCompletelyIntact() = runBlocking {
+        db.habitDao().insertHabit(HabitEntity(name = "Bestehend", color = "#F2B450", freq = "daily", createdAt = 42L))
+
+        try {
+            viewModel.importXml("nicht valides xml <<<")
+        } catch (e: IllegalArgumentException) {
+            // erwartet
+        }
+
+        val result = repository.observeHabitsWithDone().first()
+        assertEquals(1, result.size)
+        assertEquals("Bestehend", result.first().habit.name)
+    }
 }

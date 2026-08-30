@@ -17,6 +17,10 @@ class BackupViewModel(
     private val prefs: SharedPreferences
 ) : ViewModel() {
 
+    companion object {
+        const val BACKUP_PREFS_NAME = "backup_meta"
+    }
+
     private val _lastBackupText = MutableStateFlow(computeLastBackupText())
     val lastBackupText: StateFlow<String> = _lastBackupText.asStateFlow()
 

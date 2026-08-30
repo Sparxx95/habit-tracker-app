@@ -25,7 +25,7 @@ class HabitRepository(private val dao: HabitDao) {
         val imports = imported.map { p ->
             HabitImport(
                 entity = HabitEntity(name = p.name, color = p.color, freq = p.freq, group = p.group, createdAt = p.createdAt),
-                doneKeys = p.doneKeys
+                doneKeys = p.doneKeys.distinct()
             )
         }
         dao.replaceAllHabits(imports)

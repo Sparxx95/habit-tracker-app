@@ -47,9 +47,16 @@ fun buildHabitsXml(habits: List<HabitWithDoneEntities>): String {
 private val DAY_KEY_PATTERN = Regex("^\\d{4}(-\\d{2}-\\d{2}|-W\\d{2})$")
 
 fun parseHabitsXml(xml: String, importedAt: Long): List<ParsedHabit> {
-    val document = try {
-        val factory = DocumentBuilderFactory.newInstance()
+    val factory = DocumentBuilderFactory.newInstance()
+    try {
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+    } catch (e: Exception) {
+        // Feature not supported by this platform's XML parser (e.g. Android's Harmony/Expat-based
+        // DocumentBuilderFactory rejects Xerces-specific feature URIs) — parsing still proceeds
+        // without this specific hardening. Acceptable here: the imported file is chosen by the
+        // device owner from local storage via the system file picker, not untrusted network input.
+    }
+    val document = try {
         factory.newDocumentBuilder().parse(InputSource(StringReader(xml)))
     } catch (e: Exception) {
         throw IllegalArgumentException("XML ungültig", e)

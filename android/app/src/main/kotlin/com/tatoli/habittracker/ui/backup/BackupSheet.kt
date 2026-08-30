@@ -37,6 +37,7 @@ fun BackupSheet(viewModel: BackupViewModel, onDismiss: () -> Unit) {
     val lastBackupText by viewModel.lastBackupText.collectAsState()
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
     var pendingImportXml by remember { mutableStateOf<String?>(null) }
     var pendingImportCount by remember { mutableStateOf(0) }
 
@@ -52,9 +53,11 @@ fun BackupSheet(viewModel: BackupViewModel, onDismiss: () -> Unit) {
                     pendingImportCount = parsedCount
                 } else {
                     val imported = viewModel.importXml(xml)
-                    errorMessage = "Backup importiert: $imported Gewohnheit(en)."
+                    errorMessage = null
+                    successMessage = "Backup importiert: $imported Gewohnheit(en)."
                 }
             } catch (e: Exception) {
+                successMessage = null
                 errorMessage = "Import fehlgeschlagen: ${e.message}"
             }
         }
@@ -69,18 +72,23 @@ fun BackupSheet(viewModel: BackupViewModel, onDismiss: () -> Unit) {
             Button(
                 onClick = {
                     scope.launch {
-                        val xml = viewModel.buildExportXml()
-                        val fileName = "habits-backup-${System.currentTimeMillis()}.xml"
-                        val file = File(context.cacheDir, fileName)
-                        file.writeText(xml)
-                        val uri = FileProvider.getUriForFile(context, "com.tatoli.habittracker.fileprovider", file)
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "application/xml"
-                            putExtra(Intent.EXTRA_STREAM, uri)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        try {
+                            val xml = viewModel.buildExportXml()
+                            val fileName = "habits-backup-${System.currentTimeMillis()}.xml"
+                            val file = File(context.cacheDir, fileName)
+                            file.writeText(xml)
+                            val uri = FileProvider.getUriForFile(context, "com.tatoli.habittracker.fileprovider", file)
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/xml"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(intent, fileName))
+                            viewModel.markBackupDone()
+                        } catch (e: Exception) {
+                            successMessage = null
+                            errorMessage = "Export fehlgeschlagen: ${e.message}"
                         }
-                        context.startActivity(Intent.createChooser(intent, fileName))
-                        viewModel.markBackupDone()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -98,6 +106,10 @@ fun BackupSheet(viewModel: BackupViewModel, onDismiss: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
                 Text(text = message, color = MaterialTheme.colorScheme.error)
             }
+            successMessage?.let { message ->
+                Spacer(Modifier.height(16.dp))
+                Text(text = message, color = MaterialTheme.colorScheme.onSurface)
+            }
         }
     }
 
@@ -111,8 +123,10 @@ fun BackupSheet(viewModel: BackupViewModel, onDismiss: () -> Unit) {
                     scope.launch {
                         try {
                             val imported = viewModel.importXml(xml)
-                            errorMessage = "Backup importiert: $imported Gewohnheit(en)."
+                            errorMessage = null
+                            successMessage = "Backup importiert: $imported Gewohnheit(en)."
                         } catch (e: Exception) {
+                            successMessage = null
                             errorMessage = "Import fehlgeschlagen: ${e.message}"
                         }
                         pendingImportXml = null

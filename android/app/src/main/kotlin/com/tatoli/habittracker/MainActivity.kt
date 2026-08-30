@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -78,7 +79,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun HabitTrackerApp(repository: HabitRepository) {
+    val context = LocalContext.current
     var sheetState by remember { mutableStateOf<EditSheetState>(EditSheetState.Hidden) }
+    var showBackupSheet by remember { mutableStateOf(false) }
     var currentScreen by rememberSaveable(stateSaver = AppScreenSaver) {
         mutableStateOf<AppScreen>(AppScreen.List)
     }
@@ -132,7 +135,8 @@ private fun HabitTrackerApp(repository: HabitRepository) {
                 onAddHabit = { sheetState = EditSheetState.AddNew },
                 onEditHabit = { id -> sheetState = EditSheetState.EditExisting(id) },
                 onOpenStats = { currentScreen = AppScreen.Stats },
-                onOpenDashboard = { currentScreen = AppScreen.Dashboard }
+                onOpenDashboard = { currentScreen = AppScreen.Dashboard },
+                onOpenBackup = { showBackupSheet = true }
             )
         }
         is AppScreen.Stats -> {
@@ -176,5 +180,18 @@ private fun HabitTrackerApp(repository: HabitRepository) {
                 onSaved = { sheetState = EditSheetState.Hidden }
             )
         }
+    }
+
+    if (showBackupSheet) {
+        // Frische Instanz pro Öffnen, gleicher Grund wie bei den Edit-Sheet-ViewModels:
+        // kein Zwischenspeichern von z. B. einer Fehlermeldung aus einem vorherigen Öffnen.
+        val backupViewModel = remember(showBackupSheet) {
+            val prefs = context.getSharedPreferences("backup_meta", android.content.Context.MODE_PRIVATE)
+            com.tatoli.habittracker.ui.backup.BackupViewModel(repository, prefs)
+        }
+        com.tatoli.habittracker.ui.backup.BackupSheet(
+            viewModel = backupViewModel,
+            onDismiss = { showBackupSheet = false }
+        )
     }
 }

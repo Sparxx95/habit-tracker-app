@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,7 +70,8 @@ fun HabitListScreen(
     onAddHabit: () -> Unit,
     onEditHabit: (Long) -> Unit,
     onOpenStats: () -> Unit,
-    onOpenDashboard: () -> Unit
+    onOpenDashboard: () -> Unit,
+    onOpenBackup: () -> Unit
 ) {
     val viewMonth by viewModel.viewMonth.collectAsState()
     val availableGroups by viewModel.availableGroups.collectAsState()
@@ -79,6 +81,9 @@ fun HabitListScreen(
     Scaffold(
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FloatingActionButton(onClick = onOpenBackup) {
+                    Icon(Icons.Default.Save, contentDescription = "Backup")
+                }
                 FloatingActionButton(onClick = onOpenDashboard) {
                     Icon(Icons.Default.Insights, contentDescription = "Dashboard")
                 }
@@ -106,7 +111,7 @@ fun HabitListScreen(
             }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 216.dp)
+                contentPadding = PaddingValues(bottom = 284.dp)
             ) {
                 listDisplay.sections.forEach { section ->
                     if (listDisplay.showGroupHeaders) {

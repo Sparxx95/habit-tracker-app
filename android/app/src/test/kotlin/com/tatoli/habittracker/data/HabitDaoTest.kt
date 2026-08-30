@@ -99,6 +99,15 @@ class HabitDaoTest {
         assertEquals(1, neu2.doneEntries.size)
         assertEquals("2026-W31", neu2.doneEntries.first().dateKey)
 
+        // Belegt, dass die rohe "DELETE FROM habits" in deleteAllHabits() tatsächlich per
+        // onDelete = CASCADE nach habit_done durchgreift, statt sich nur zufällig hinter der
+        // ID-Vergabe von AUTOINCREMENT zu verstecken (alte IDs werden nie wiederverwendet,
+        // daher würde eine verwaiste habit_done-Zeile in observeHabitsWithDone() nie auftauchen).
+        db.query("SELECT COUNT(*) FROM habit_done WHERE habitId = ?", arrayOf(oldId)).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(0, cursor.getInt(0))
+        }
+
         db.close()
     }
 

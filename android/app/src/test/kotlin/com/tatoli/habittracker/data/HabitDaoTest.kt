@@ -65,4 +65,52 @@ class HabitDaoTest {
 
         db.close()
     }
+
+    @Test
+    fun replaceAllHabits_deletesExistingDataAndInsertsImportedHabitsWithDoneEntries() = runBlocking {
+        val db = buildDb()
+        val dao = db.habitDao()
+
+        val oldId = dao.insertHabit(HabitEntity(name = "Alt", color = "#F2B450", freq = "daily"))
+        dao.insertDone(HabitDoneEntity(habitId = oldId, dateKey = "2026-08-01"))
+
+        val imports = listOf(
+            HabitImport(
+                entity = HabitEntity(name = "Neu1", color = "#4FC98A", freq = "daily", group = "G", createdAt = 111L),
+                doneKeys = listOf("2026-08-05", "2026-08-06")
+            ),
+            HabitImport(
+                entity = HabitEntity(name = "Neu2", color = "#5FB4E5", freq = "weekly", createdAt = 222L),
+                doneKeys = listOf("2026-W31")
+            )
+        )
+        dao.replaceAllHabits(imports)
+
+        val result = dao.observeHabitsWithDone().first()
+        assertEquals(2, result.size)
+        assertTrue(result.none { it.habit.name == "Alt" })
+
+        val neu1 = result.first { it.habit.name == "Neu1" }
+        assertEquals("G", neu1.habit.group)
+        assertEquals(111L, neu1.habit.createdAt)
+        assertEquals(2, neu1.doneEntries.size)
+
+        val neu2 = result.first { it.habit.name == "Neu2" }
+        assertEquals(1, neu2.doneEntries.size)
+        assertEquals("2026-W31", neu2.doneEntries.first().dateKey)
+
+        db.close()
+    }
+
+    @Test
+    fun replaceAllHabits_withEmptyList_deletesEverythingAndInsertsNothing() = runBlocking {
+        val db = buildDb()
+        val dao = db.habitDao()
+        dao.insertHabit(HabitEntity(name = "Alt", color = "#F2B450", freq = "daily"))
+
+        dao.replaceAllHabits(emptyList())
+
+        assertTrue(dao.observeHabitsWithDone().first().isEmpty())
+        db.close()
+    }
 }

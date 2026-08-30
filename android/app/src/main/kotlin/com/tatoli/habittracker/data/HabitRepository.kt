@@ -1,5 +1,6 @@
 package com.tatoli.habittracker.data
 
+import com.tatoli.habittracker.util.ParsedHabit
 import kotlinx.coroutines.flow.Flow
 
 class HabitRepository(private val dao: HabitDao) {
@@ -18,5 +19,15 @@ class HabitRepository(private val dao: HabitDao) {
     suspend fun toggleDone(habitId: Long, dateKey: String, currentlyDone: Boolean) {
         if (currentlyDone) dao.deleteDone(habitId, dateKey)
         else dao.insertDone(HabitDoneEntity(habitId = habitId, dateKey = dateKey))
+    }
+
+    suspend fun replaceAllHabits(imported: List<ParsedHabit>) {
+        val imports = imported.map { p ->
+            HabitImport(
+                entity = HabitEntity(name = p.name, color = p.color, freq = p.freq, group = p.group, createdAt = p.createdAt),
+                doneKeys = p.doneKeys
+            )
+        }
+        dao.replaceAllHabits(imports)
     }
 }
